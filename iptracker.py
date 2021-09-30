@@ -7,27 +7,29 @@ import time
 import datetime
 
 def getThreads():
-    p = re.compile(r'\{"no":(\d+),"now":"[^"]+","name":"[^"]+","sub":"(\\/wah\\/.+?)",')
-    p2 = re.compile(r'{"posts":\[({[^}]+})')
-    p3 = re.compile(r'^{"no":(\d+),"now":"([^"]+)","name":"([^"]+)","sub":"(.+?)",.+?"replies":(\d+),"images":(\d+),"unique_ips":(\d+)')
-
     threads = []
 
     with urllib.request.urlopen("https://a.4cdn.org/vt/catalog.json") as url:
-        data = url.read().decode()
-        catalogPosts = p.findall(data)
-    
-        for match in catalogPosts:
-            time.sleep(1.5)
-            with urllib.request.urlopen("https://a.4cdn.org/vt/thread/"+match[0]+".json") as postUrl:
-                data = postUrl.read().decode()
-                posts = p2.findall(data)
+        data = url.read()
+        data = json.loads(data)
 
-                for post in posts:
-                    postData = p3.search(post)
-                    #print(postData[0])
-                    threads.append(Thread(postData[1], postData[2], postData[3], postData[4], postData[5], postData[6], postData[7]))
+        temp = []
+        for page in data:
+            for thread in page['threads']:
+                try: # I'm fairly certain this isn't proper
+                    if 'wah' in thread['sub'].lower():
+                        temp.append(thread)
+                except:
+                    pass
 
+        for t in temp:
+            time.sleep(1) # Ensure 1 second between requests
+            with urllib.request.urlopen(f"https://a.4cdn.org/vt/thread/{t['no']}.json") as url:
+                data = url.read()
+                data = json.loads(data)
+                t = list(data['posts'])[0]
+
+                threads.append(Thread(t['no'], t['now'], t['name'], t['sub'], t['replies'], t['images'], t['unique_ips']))
     return threads
 
 
@@ -179,7 +181,7 @@ if __name__ == '__main__':
 
         # Show updated threads
         for newThread in newThreads:
-            print("Updating: " + newThread.idd)
+            print(f"Updating: {newThread.idd}")
  
         for thread in Thread.threads:
             cur.execute('INSERT or REPLACE INTO Threads VALUES (?, ?, ?, ?, ?, ?, ?)', 
