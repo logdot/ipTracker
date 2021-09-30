@@ -39,6 +39,7 @@ def getThreads():
 class Thread:
     threads = []
     buffer = []
+    oldThreads = []
     init = False
 
     def __init__(self, idd, now, name, sub, replies, images, ips):
@@ -58,7 +59,7 @@ class Thread:
     @classmethod
     def pushBuffer(cls):
         for t in cls.buffer:
-            addThread(t)
+            Thread.addThread(t)
 
 
     def getDay(self):
@@ -81,7 +82,7 @@ class Thread:
                 cls.threads[i] = thread
 
         if not old:
-            Thread.threads.append(self)
+            Thread.threads.append(thread)
 
 
     @classmethod
@@ -90,10 +91,18 @@ class Thread:
         cur = con.cursor()
 
         for thread in cur.execute('SELECT * FROM Threads WHERE id != 0'):
-            Thread(thread[0], thread[1], thread[2], thread[3], thread[4], thread[5], thread[6])
+            t = Thread(thread[0], thread[1], thread[2], thread[3], thread[4], thread[5], thread[6])
+            Thread.addToBuffer(t)
         con.close()
 
+        Thread.pushBuffer()
         return cls.threads
+
+    
+    @classmethod
+    def getThread(cls, id):
+        for thread in (thread for thread in cls.threads if thread.idd == id):
+            return thread
 
 
     @classmethod
@@ -195,7 +204,14 @@ if __name__ == '__main__':
 
         # Show updated threads
         for newThread in newThreads:
-            print(f"Updating: {newThread.idd}")
+            oldThread = Thread.getThread(newThread.idd)
+            if oldThread != None:
+                newReplies = newThread.replies - Thread.getThread(newThread.idd).replies
+                newIps = newThread.ips - Thread.getThread(newThread.idd).ips
+
+                print(f"Updating: {newThread.idd} | {newReplies} new replies | {newIps} new ips")
+            else:
+                print(f"New Thread: {newThread.idd} with {newThread.replies} replies and {newThread.ips} ips")
         Thread.pushBuffer()
  
         for thread in Thread.threads:
