@@ -29,12 +29,16 @@ def getThreads():
                 data = json.loads(data)
                 t = list(data['posts'])[0]
 
-                threads.append(Thread(t['no'], t['now'], t['name'], t['sub'], t['replies'], t['images'], t['unique_ips']))
+                thread = Thread(t['no'], t['now'], t['name'], t['sub'], t['replies'], t['images'], t['unique_ips'])
+
+                threads.append(thread)
+                Thread.addToBuffer(thread)
     return threads
 
 
 class Thread:
     threads = []
+    buffer = []
     init = False
 
     def __init__(self, idd, now, name, sub, replies, images, ips):
@@ -46,7 +50,16 @@ class Thread:
         self.images = images
         self.ips = ips
 
-        self.addThread()
+    @classmethod
+    def addToBuffer(cls, thread):
+        cls.buffer.append(thread)
+
+
+    @classmethod
+    def pushBuffer(cls):
+        for t in cls.buffer:
+            addThread(t)
+
 
     def getDay(self):
         return self.now[11:14]
@@ -59,12 +72,13 @@ class Thread:
             cls.init = True
 
 
-    def addThread(self):
+    @classmethod
+    def addThread(cls, thread):
         old = False
-        for i in range(len(Thread.threads)):
-            if Thread.threads[i].idd == self.idd:
+        for i in range(len(cls.threads)):
+            if cls.threads[i].idd == thread.idd:
                 old = True
-                Thread.threads[i] = self
+                cls.threads[i] = thread
 
         if not old:
             Thread.threads.append(self)
@@ -182,6 +196,7 @@ if __name__ == '__main__':
         # Show updated threads
         for newThread in newThreads:
             print(f"Updating: {newThread.idd}")
+        Thread.pushBuffer()
  
         for thread in Thread.threads:
             cur.execute('INSERT or REPLACE INTO Threads VALUES (?, ?, ?, ?, ?, ?, ?)', 
