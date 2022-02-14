@@ -206,10 +206,12 @@ if __name__ == '__main__':
         for newThread in newThreads:
             oldThread = Thread.getThread(newThread.idd)
             if oldThread != None:
-                newReplies = newThread.replies - Thread.getThread(newThread.idd).replies
-                newIps = newThread.ips - Thread.getThread(newThread.idd).ips
+                currentReplies = Thread.getThread(newThread.idd).replies
+                currentIps = Thread.getThread(newThread.idd).ips
+                newReplies = newThread.replies - currentReplies
+                newIps = newThread.ips - currentIps
 
-                print(f"Updating: {newThread.idd} | {newReplies} new replies | {newIps} new ips")
+                print(f"Updating: {newThread.idd} | {currentReplies} + ({newReplies}) | {currentIps} + ({newIps})")
             else:
                 print(f"New Thread: {newThread.idd} with {newThread.replies} replies and {newThread.ips} ips")
         Thread.pushBuffer()
